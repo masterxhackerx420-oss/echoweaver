@@ -28,10 +28,16 @@
   }
   header {
     border-bottom: 1px solid var(--border);
-    padding: 1.5rem 2rem;
+    padding: 1rem 2rem;
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 1.25rem;
+    background: linear-gradient(90deg, #0a0a0f 0%, #0d1117 100%);
+  }
+  header img {
+    height: 64px;
+    width: auto;
+    border-radius: 6px;
   }
   .logo {
     font-size: 1.6rem;
@@ -120,6 +126,7 @@
 </head>
 <body>
 <header>
+  <img src="logo.jpg" alt="EchoWeaver logo">
   <div class="logo">Echo<span>Weaver</span></div>
   <div class="tagline">Temporal Correlation • Stylometric OSINT</div>
 </header>
