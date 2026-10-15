@@ -75,6 +75,7 @@
     font-weight: 600;
     cursor: pointer;
     margin-top: 1rem;
+    margin-right: 0.5rem;
   }
   button:hover { background: var(--blue-bright); }
   button.secondary {
@@ -83,6 +84,7 @@
     color: var(--text);
   }
   button.secondary:hover { border-color: var(--blue); }
+  #downloadBtn { display: none; }
   .results { margin-top: 1.5rem; }
   .card {
     background: var(--surface);
@@ -134,6 +136,7 @@
       <div style="align-self: end;">
         <button onclick="runAnalysis()">Analyze</button>
         <button class="secondary" onclick="loadDemo()">Load Demo</button>
+        <button id="downloadBtn" class="secondary" onclick="downloadResults()">Download Results</button>
       </div>
     </div>
   </div>
@@ -184,6 +187,8 @@ const DEMO = [
     ]
   }
 ];
+
+let lastResults = null;
 
 function loadDemo() {
   document.getElementById('input').value = JSON.stringify(DEMO, null, 2);
@@ -279,8 +284,11 @@ function runAnalysis() {
   const raw = document.getElementById('input').value.trim();
   const windowMin = parseInt(document.getElementById('window').value) || 15;
   const out = document.getElementById('results');
+  const dlBtn = document.getElementById('downloadBtn');
   if (!raw) {
     out.innerHTML = '<div class="empty">Paste JSON data or load the demo.</div>';
+    dlBtn.style.display = 'none';
+    lastResults = null;
     return;
   }
   let accounts;
@@ -289,11 +297,21 @@ function runAnalysis() {
     if (!Array.isArray(accounts)) throw new Error();
   } catch {
     out.innerHTML = '<div class="empty" style="color:#ef4444">Invalid JSON. Expected an array of account objects.</div>';
+    dlBtn.style.display = 'none';
+    lastResults = null;
     return;
   }
   const results = analyze(accounts, windowMin);
+  lastResults = {
+    tool: 'EchoWeaver',
+    version: '0.1.0',
+    timestamp: new Date().toISOString(),
+    window_minutes: windowMin,
+    results: results
+  };
   if (!results.length) {
     out.innerHTML = '<div class="empty">No significant correlations found.</div>';
+    dlBtn.style.display = 'none';
     return;
   }
   out.innerHTML = results.map(r => `
@@ -304,6 +322,20 @@ function runAnalysis() {
       <div class="scores">Temporal ${(r.temporal*100).toFixed(0)}% &nbsp;•&nbsp; Style ${(r.style*100).toFixed(0)}%</div>
     </div>
   `).join('');
+  dlBtn.style.display = 'inline-block';
+}
+
+function downloadResults() {
+  if (!lastResults) return;
+  const blob = new Blob([JSON.stringify(lastResults, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `echoweaver-results-${new Date().toISOString().slice(0,19).replace(/[:T]/g, '-')}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 loadDemo();
