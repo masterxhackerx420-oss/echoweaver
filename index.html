@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EchoWeaver — Social Media OSINT</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --border: #1e1e2e;
+    --text: #e8e8f0;
+    --muted: #8888a0;
+    --blue: #3b82f6;
+    --blue-bright: #60a5fa;
+    --silver: #c0c0d0;
+    --high: #ef4444;
+    --med: #eab308;
+    --low: #22c55e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 1.5rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .logo {
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  .logo span { color: var(--blue); }
+  .tagline {
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-left: auto;
+  }
+  main { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+  .controls {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.4rem; }
+  textarea, input[type="number"], select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 0.75rem;
+    font-family: 'Consolas', monospace;
+    font-size: 0.9rem;
+  }
+  textarea { min-height: 180px; resize: vertical; }
+  .row { display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap; }
+  .row > div { flex: 1; min-width: 140px; }
+  button {
+    background: var(--blue);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 1rem;
+  }
+  button:hover { background: var(--blue-bright); }
+  button.secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  button.secondary:hover { border-color: var(--blue); }
+  .results { margin-top: 1.5rem; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .signal {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .HIGH { background: rgba(239,68,68,0.15); color: var(--high); }
+  .MEDIUM { background: rgba(234,179,8,0.15); color: var(--med); }
+  .LOW { background: rgba(34,197,94,0.15); color: var(--low); }
+  .accounts { margin: 0.5rem 0; font-weight: 500; }
+  .scores { color: var(--muted); font-size: 0.85rem; }
+  .confidence { font-size: 1.4rem; font-weight: 700; float: right; }
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+    padding: 2rem;
+    border-top: 1px solid var(--border);
+    margin-top: 3rem;
+  }
+  .empty { color: var(--muted); text-align: center; padding: 2rem; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Echo<span>Weaver</span></div>
+  <div class="tagline">Temporal Correlation • Stylometric OSINT</div>
+</header>
+
+<main>
+  <div class="controls">
+    <label>Account Data (JSON)</label>
+    <textarea id="input" placeholder='Paste JSON array of accounts, or click "Load Demo"'></textarea>
+    <div class="row">
+      <div>
+        <label>Time Window (minutes)</label>
+        <input type="number" id="window" value="15" min="1" max="120">
+      </div>
+      <div style="align-self: end;">
+        <button onclick="runAnalysis()">Analyze</button>
+        <button class="secondary" onclick="loadDemo()">Load Demo</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="results" class="results"></div>
+</main>
+
+<footer>
+  EchoWeaver v0.1 — Public data only. Research & educational use.<br>
+  DebianGang / WolfSec
+</footer>
+
+<script>
+const DEMO = [
+  {
+    "handle": "@target_alpha",
+    "platform": "X",
+    "posts": [
+      {"text": "Just saw the news about the data center outage. This is getting serious.", "timestamp": "2026-10-14 14:22:00"},
+      {"text": "Anyone else notice the pattern here? Same playbook every time.", "timestamp": "2026-10-14 14:35:00"},
+      {"text": "The timeline doesn't add up. Something's off.", "timestamp": "2026-10-14 18:10:00"}
+    ]
+  },
+  {
+    "handle": "@shadow_beta",
+    "platform": "Reddit",
+    "posts": [
+      {"text": "Saw the data center outage news. This is getting serious.", "timestamp": "2026-10-14 14:24:00"},
+      {"text": "Same pattern every single time. Not a coincidence.", "timestamp": "2026-10-14 14:38:00"},
+      {"text": "Timeline is inconsistent. Digging deeper.", "timestamp": "2026-10-14 18:15:00"}
+    ]
+  },
+  {
+    "handle": "@unrelated_gamma",
+    "platform": "X",
+    "posts": [
+      {"text": "Beautiful weather today. Going for a hike.", "timestamp": "2026-10-14 09:00:00"},
+      {"text": "Coffee and code. Perfect morning.", "timestamp": "2026-10-14 11:30:00"},
+      {"text": "New album dropped. Highly recommend.", "timestamp": "2026-10-14 20:00:00"}
+    ]
+  },
+  {
+    "handle": "@alt_delta",
+    "platform": "Instagram",
+    "posts": [
+      {"text": "The outage is bigger than they're saying. Pattern recognition.", "timestamp": "2026-10-14 14:26:00"},
+      {"text": "Not buying the official story. Timeline is cooked.", "timestamp": "2026-10-14 18:12:00"}
+    ]
+  }
+];
+
+function loadDemo() {
+  document.getElementById('input').value = JSON.stringify(DEMO, null, 2);
+}
+
+function extractStyle(text) {
+  if (!text) return {};
+  const words = text.toLowerCase().match(/\b\w+\b/g) || [];
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim());
+  const punct = (text.match(/[.,!?;:]/g) || []).length;
+  const emoji = (text.match(/[\u{1F600}-\u{1F64F}]/gu) || []).length;
+  const caps = [...text].filter(c => c === c.toUpperCase() && c !== c.toLowerCase()).length;
+  return {
+    avg_word_length: words.reduce((a, w) => a + w.length, 0) / Math.max(words.length, 1),
+    avg_sentence_length: words.length / Math.max(sentences.length, 1),
+    unique_word_ratio: new Set(words).size / Math.max(words.length, 1),
+    punctuation_density: punct / Math.max(text.length, 1),
+    emoji_count: emoji,
+    caps_ratio: caps / Math.max(text.length, 1)
+  };
+}
+
+function styleSimilarity(a, b) {
+  const keys = Object.keys(a).filter(k => k in b);
+  if (!keys.length) return 0;
+  let sum = 0;
+  for (const k of keys) {
+    const av = a[k], bv = b[k];
+    if (av === 0 && bv === 0) sum += 1;
+    else sum += 1 - Math.min(Math.abs(av - bv) / Math.max(av, bv, 0.001), 1);
+  }
+  return sum / keys.length;
+}
+
+function parseTime(ts) {
+  const d = new Date(ts.replace(' ', 'T'));
+  return isNaN(d) ? new Date() : d;
+}
+
+function temporalOverlap(postsA, postsB, windowMin) {
+  if (!postsA.length || !postsB.length) return 0;
+  let matches = 0;
+  for (const pa of postsA) {
+    const ta = parseTime(pa.timestamp);
+    for (const pb of postsB) {
+      const tb = parseTime(pb.timestamp);
+      const delta = Math.abs(ta - tb) / 60000;
+      if (delta <= windowMin) {
+        const sim = similarity(pa.text.slice(0,100).toLowerCase(), pb.text.slice(0,100).toLowerCase());
+        if (sim > 0.3 || delta < 5) matches++;
+      }
+    }
+  }
+  return Math.min(matches / Math.max(postsA.length, 1), 1);
+}
+
+function similarity(a, b) {
+  if (!a || !b) return 0;
+  let matches = 0;
+  const set = new Set(b.split(/\s+/));
+  for (const w of a.split(/\s+/)) if (set.has(w)) matches++;
+  return matches / Math.max(a.split(/\s+/).length, 1);
+}
+
+function analyze(accounts, windowMin) {
+  accounts.forEach(a => {
+    const text = (a.posts || []).map(p => p.text).join(' ');
+    a.style = extractStyle(text);
+  });
+  const results = [];
+  for (let i = 0; i < accounts.length; i++) {
+    for (let j = i + 1; j < accounts.length; j++) {
+      const a = accounts[i], b = accounts[j];
+      const temp = temporalOverlap(a.posts || [], b.posts || [], windowMin);
+      const style = styleSimilarity(a.style || {}, b.style || {});
+      const conf = temp * 0.65 + style * 0.35;
+      if (conf > 0.15) {
+        results.push({
+          a: `${a.handle} (${a.platform})`,
+          b: `${b.handle} (${b.platform})`,
+          temporal: temp,
+          style,
+          confidence: conf,
+          signal: conf > 0.6 ? 'HIGH' : conf > 0.35 ? 'MEDIUM' : 'LOW'
+        });
+      }
+    }
+  }
+  return results.sort((x, y) => y.confidence - x.confidence);
+}
+
+function runAnalysis() {
+  const raw = document.getElementById('input').value.trim();
+  const windowMin = parseInt(document.getElementById('window').value) || 15;
+  const out = document.getElementById('results');
+  if (!raw) {
+    out.innerHTML = '<div class="empty">Paste JSON data or load the demo.</div>';
+    return;
+  }
+  let accounts;
+  try {
+    accounts = JSON.parse(raw);
+    if (!Array.isArray(accounts)) throw new Error();
+  } catch {
+    out.innerHTML = '<div class="empty" style="color:#ef4444">Invalid JSON. Expected an array of account objects.</div>';
+    return;
+  }
+  const results = analyze(accounts, windowMin);
+  if (!results.length) {
+    out.innerHTML = '<div class="empty">No significant correlations found.</div>';
+    return;
+  }
+  out.innerHTML = results.map(r => `
+    <div class="card">
+      <div class="confidence">${(r.confidence * 100).toFixed(0)}%</div>
+      <span class="signal ${r.signal}">${r.signal}</span>
+      <div class="accounts">${r.a}<br>↔ ${r.b}</div>
+      <div class="scores">Temporal ${(r.temporal*100).toFixed(0)}% &nbsp;•&nbsp; Style ${(r.style*100).toFixed(0)}%</div>
+    </div>
+  `).join('');
+}
+
+loadDemo();
+</script>
+</body>
+</html>
