@@ -1,0 +1,29 @@
+[
+  {
+    "handle": "@target_alpha",
+    "platform": "X",
+    "posts": [
+      {"text": "Just saw the news about the data center outage. This is getting serious.", "timestamp": "2026-10-14 14:22:00"},
+      {"text": "Anyone else notice the pattern here? Same playbook every time.", "timestamp": "2026-10-14 14:35:00"},
+      {"text": "The timeline doesn't add up. Something's off.", "timestamp": "2026-10-14 18:10:00"}
+    ]
+  },
+  {
+    "handle": "@shadow_beta",
+    "platform": "Reddit",
+    "posts": [
+      {"text": "Saw the data center outage news. This is getting serious.", "timestamp": "2026-10-14 14:24:00"},
+      {"text": "Same pattern every single time. Not a coincidence.", "timestamp": "2026-10-14 14:38:00"},
+      {"text": "Timeline is inconsistent. Digging deeper.", "timestamp": "2026-10-14 18:15:00"}
+    ]
+  },
+  {
+    "handle": "@unrelated_gamma",
+    "platform": "X",
+    "posts": [
+      {"text": "Beautiful weather today. Going for a hike.", "timestamp": "2026-10-14 09:00:00"},
+      {"text": "Coffee and code. Perfect morning.", "timestamp": "2026-10-14 11:30:00"},
+      {"text": "New album dropped. Highly recommend.", "timestamp": "2026-10-14 20:00:00"}
+    ]
+  }
+]
